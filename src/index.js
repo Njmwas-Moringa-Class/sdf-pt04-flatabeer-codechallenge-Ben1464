@@ -1,62 +1,70 @@
-//The event listener is to execute once the DOM content is fully loaded
+// The event lister is to make sure the html is loaded first before the content is loaded
 document.addEventListener("DOMContentLoaded", async () => {
-    //Base url of the API
+
+  //The base url of the API
   const baseUrl = "http://localhost:3000";
-//Fuction to fetch a beer data using its Id
-  async function fetchBeerById(beerId) {
-      const response = await fetch(`${baseUrl}/beers/${beerId}`);
+
+  // A generalized fetch function for making API calls
+  async function fetchData(endpoint) {
+      const response = await fetch(`${baseUrl}${endpoint}`);
+      // Parse and return the JSON response
       return await response.json();
   }
-//Fuction to fetch all beers data using its Id
-  async function fetchAllBeers() {
-      const response = await fetch(`${baseUrl}/beers`);
-      return await response.json();
+
+  // Function to add list items to a specified parent element
+  function addListItem(parentId, textContent, clickCallback) {
+      const li = document.createElement("li");
+      li.textContent = textContent;
+
+      // To attach a click callback when called
+      if (clickCallback) {
+          li.addEventListener("click", clickCallback);
+      }
+
+      // to append the created list item to the specified parent
+      document.getElementById(parentId).appendChild(li);
   }
-//Fuction to display the details of a beer 
+
+  //To display details of a specific beer
   function displayBeerDetails(beerData) {
+      // To Set beer name, description, and image
       document.getElementById("beer-name").textContent = beerData.name;
       document.getElementById("beer-description").textContent = beerData.description;
       document.getElementById("beer-image").src = beerData.image_url;
-// To clear and populate the reviews for the beers
+
+      //  To clear and populate the reviews list for the beer
       const reviewList = document.getElementById("review-list");
       reviewList.innerHTML = "";
-
-      beerData.reviews.forEach(review => {
-          const li = document.createElement("li");
-          li.textContent = review;
-          reviewList.appendChild(li);
-      });
+      beerData.reviews.forEach(review => addListItem("review-list", review));
   }
-//Fuction to list all beers 
-  async function displayBeerMenu() {
-    // Fetch all beers and diplay them in the beer list
-      const beers = await fetchAllBeers();
-      const beerList = document.getElementById("beer-list");
 
+  // To display the menu of all beers
+  async function displayBeerMenu() {
+      // To fetch all available beers from the API
+      const beers = await fetchData('/beers');
+
+      // Toa add each beer as a list item with a click event to show its details
       beers.forEach(beer => {
-          const li = document.createElement("li");
-          li.textContent = beer.name;
-          // Attached a click event listener to each beer to display its details when clicked
-          li.addEventListener("click", async () => {
-              const beerData = await fetchBeerById(beer.id);
+          addListItem("beer-list", beer.name, async () => {
+              const beerData = await fetchData(`/beers/${beer.id}`);
               displayBeerDetails(beerData);
           });
-          beerList.appendChild(li);
       });
   }
-// Attached an event listener to the review form to handle its submission
-  document.getElementById("review-form").addEventListener("submit", (event) => {
-    //// To prevent the form from  submitting prematurely
-      event.preventDefault();
-      const newReview = document.getElementById("review").value;
-      const li = document.createElement("li");
-      li.textContent = newReview;
 
-      document.getElementById("review-list").appendChild(li);
+  // Event listener to handle the review form submission
+  document.getElementById("review-form").addEventListener("submit", (event) => {
+      //  To prevent the form from its default submition behavior
+      event.preventDefault();
+
+      // To get the review text, add it as a list item, then clear the input
+      const newReview = document.getElementById("review").value;
+      addListItem("review-list", newReview);
       document.getElementById("review").value = "";
   });
 
+  // To initially display the beer menu and the details of the first beer
   await displayBeerMenu();
-  const initialBeerData = await fetchBeerById(1);
+  const initialBeerData = await fetchData('/beers/1');
   displayBeerDetails(initialBeerData);
 });
